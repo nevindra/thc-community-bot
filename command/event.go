@@ -198,7 +198,7 @@ func (c *CommandDomain) HandleEventModalSubmit(s *discordgo.Session, i *discordg
 
 	content := fmt.Sprintf("<@&%s> Hi everyone, please check this new event!", role_id)
 
-	_, err = s.ChannelMessageSendComplex("1240875544422125660", &discordgo.MessageSend{
+	_, err = s.ChannelMessageSendComplex("1238106246511595540", &discordgo.MessageSend{
 		Content: content,
 		Embeds:  []*discordgo.MessageEmbed{embed},
 	})
