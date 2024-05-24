@@ -8,11 +8,9 @@ import (
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/joho/godotenv"
-	events "github.com/nevindra/community-bot/src/commands/event"
-	"github.com/nevindra/community-bot/src/commands/ping"
-	"github.com/nevindra/community-bot/src/commands/registercafe"
-	_ "github.com/nevindra/community-bot/src/setup"
+	cafe "github.com/nevindra/community-bot/cafe"
+	"github.com/nevindra/community-bot/command"
+	setup "github.com/nevindra/community-bot/setup"
 )
 
 var (
@@ -22,10 +20,23 @@ var (
 
 type ModalHandler func(s *discordgo.Session, i *discordgo.InteractionCreate)
 
-func init() {
-	godotenv.Load()
+func main() {
+	db, err := setup.DB()
+	if err != nil {
+		log.Fatalf("cannot connect to the database: %v", err)
+	}
+	defer db.Close()
+
+	cafeDomain, err := cafe.NewCafeDomain(db)
+	if err != nil {
+		log.Fatalf("cannot create cafe domain: %v", err)
+	}
+	commandDomain, err := command.NewCommandDomain(cafeDomain)
+	if err != nil {
+		log.Fatalf("cannot create command domain: %v", err)
+	}
+
 	BotToken := os.Getenv("BOT_TOKEN")
-	var err error
 	s, err = discordgo.New("Bot " + BotToken)
 	if err != nil {
 		log.Fatalf("Invalid bot parameters: %v", err)
@@ -33,16 +44,18 @@ func init() {
 
 	// Make sure to add this handler each time you add new command
 	commandHandlers := map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
-		ping.Command.Name:         ping.Handle,
-		events.Command.Name:       events.Handle,
-		registercafe.Command.Name: registercafe.Handle,
+		command.Ping.Name:         commandDomain.HandlePing,
+		command.Event.Name:        commandDomain.HandleEvent,
+		command.RegisterCafe.Name: commandDomain.HandleRegisterCafe,
+		command.ListCafe.Name:     commandDomain.HandleListCafe,
 		// Add other commands as necessary
 	}
 
 	// Map to hold modal handlers, Make sure to add this handler each time you add new command
 	modalHandlers := map[string]ModalHandler{
-		"modals_survey_": registercafe.HandleModalSubmit,
-		"create_event":   events.HandleModalSubmit,
+		"register_cafe_": commandDomain.HandleRegisterCafeModalSubmit,
+		"create_event":   commandDomain.HandleEventModalSubmit,
+		"list_cafe_":     commandDomain.HandleListCafeModalSubmit,
 		// Add other modal handlers as necessary
 	}
 
@@ -70,16 +83,13 @@ func init() {
 		}
 	})
 
-}
-
-func main() {
 	// Log bot login details
 	s.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
 	})
 
 	// Open the Discord session
-	err := s.Open()
+	err = s.Open()
 	if err != nil {
 		log.Fatalf("Cannot open the session: %v", err)
 	}
@@ -87,9 +97,10 @@ func main() {
 
 	// Register commands with Discord
 	commands := []*discordgo.ApplicationCommand{
-		ping.Command,
-		registercafe.Command,
-		events.Command,
+		command.Ping,
+		command.RegisterCafe,
+		command.Event,
+		command.ListCafe,
 		// Add other commands
 	}
 

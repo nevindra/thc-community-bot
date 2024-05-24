@@ -22,7 +22,7 @@ To use the bot, you'll need to have a Discord server with a channel where the bo
 Run the bot with the following command:
 
 ```
-go run src/main.go
+BOT_TOKEN=<your-bot-token-here> go run main.go
 ```
 
 The bot will connect to the Discord API and start listening for messages in the channel.
@@ -31,4 +31,3 @@ The bot will connect to the Discord API and start listening for messages in the 
 
 If you'd like to contribute to this project, you can submit a pull request on GitHub.
 Please make sure to follow the project's coding style and add tests for any new features or bug fixes.
-

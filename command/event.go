@@ -1,4 +1,4 @@
-package events
+package command
 
 import (
 	"fmt"
@@ -9,14 +9,14 @@ import (
 )
 
 // Command defines the 'create event' command
-var Command = &discordgo.ApplicationCommand{
+var Event = &discordgo.ApplicationCommand{
 	Name:        "create-event",
 	Description: "Create event",
 }
 
 // Handle executes the command logic
-func Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+func (c *CommandDomain) HandleEvent(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseModal,
 		Data: &discordgo.InteractionResponseData{
 			CustomID: "create_event" + i.Interaction.Member.User.ID,
@@ -41,7 +41,7 @@ func Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 							CustomID:    "descriptions",
 							Label:       "Input event descriptions",
 							Style:       discordgo.TextInputShort,
-							Placeholder: "For example: https://maps.app.goo.gl/T6vhVnvcKwYGoFag6",
+							Placeholder: "For example: networking",
 							Required:    false,
 							MaxLength:   300,
 						},
@@ -75,10 +75,13 @@ func Handle(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			},
 		},
 	})
+	if err != nil {
+		log.Printf("Failed to send interaction response: %v", err)
+	}
 }
 
 // Handle modal submission for registering a cafe
-func HandleModalSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func (c *CommandDomain) HandleEventModalSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	var (
 		name, descriptions, location, event_time_str string
@@ -133,7 +136,7 @@ func HandleModalSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		})
 		return
 	}
-	endTime := parsedTime.Add(time.Hour + 6)
+	endTime := parsedTime.Add(time.Hour + 8)
 
 	// create event based on input data
 	scheduledEvent, err := s.GuildScheduledEventCreate(i.GuildID, &discordgo.GuildScheduledEventParams{
@@ -195,11 +198,10 @@ func HandleModalSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	content := fmt.Sprintf("<@&%s> Hi everyone, please check this new event!", role_id)
 
-	s.ChannelMessageSendComplex("1159497926268162048", &discordgo.MessageSend{
+	_, err = s.ChannelMessageSendComplex("1240875544422125660", &discordgo.MessageSend{
 		Content: content,
 		Embeds:  []*discordgo.MessageEmbed{embed},
 	})
-
 	if err != nil {
 		// Handle error
 		log.Println("Error sending announcement:", err)
@@ -213,11 +215,14 @@ func HandleModalSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	log.Println("Announcement sent successfully!")
 
 	// Edit Interaction Response
-	cnt := fmt.Sprintf("Event created successfully! Please check the #info-wfc channel for more information.")
-	s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+	cnt := "Event created successfully! Please check the #info-wfc channel for more information."
+	_, err = s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 		Content: &cnt,
 	})
-
+	if err != nil {
+		log.Printf("Failed to edit interaction response: %v", err)
+		return
+	}
 }
 
 // parseDateTime takes a combined date and time string in "dd/mm/yyyy HH.MM" format,
@@ -227,7 +232,7 @@ func parseDateTime(dateTimeStr string) (time.Time, error) {
 	const layout = "02/01/2006 15.04" // dd/mm/yyyy HH.MM
 
 	// Specify the GMT+7 location
-	loc, err := time.LoadLocation("Asia/Bangkok") // Bangkok is in GMT+7
+	loc, err := time.LoadLocation("Asia/Jakarta") // Bangkok is in GMT+7
 	if err != nil {
 		return time.Time{}, fmt.Errorf("failed to load GMT+7 location: %w", err)
 	}
@@ -235,12 +240,12 @@ func parseDateTime(dateTimeStr string) (time.Time, error) {
 	// Parse the datetime string in the specified location
 	dateTime, err := time.ParseInLocation(layout, dateTimeStr, loc)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("Please use the correct format: DD/MM/YYYY HH:MM")
+		return time.Time{}, fmt.Errorf("please use the correct format: DD/MM/YYYY HH:MM")
 	}
 
 	// Check if the date and time are in the past
 	if dateTime.Before(time.Now().In(loc)) {
-		return time.Time{}, fmt.Errorf("Cannot schedule event in the past, please check your input here: %s", dateTimeStr)
+		return time.Time{}, fmt.Errorf("cannot schedule event in the past, please check your input here: %s", dateTimeStr)
 	}
 
 	return dateTime, nil
