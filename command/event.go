@@ -9,13 +9,13 @@ import (
 )
 
 // Command defines the 'create event' command
-var Event = &discordgo.ApplicationCommand{
+var CreateEvent = &discordgo.ApplicationCommand{
 	Name:        "create-event",
 	Description: "Create event",
 }
 
 // Handle executes the command logic
-func (c *CommandDomain) HandleEvent(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func (c *CommandDomain) HandleCreateEvent(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseModal,
 		Data: &discordgo.InteractionResponseData{
@@ -40,7 +40,7 @@ func (c *CommandDomain) HandleEvent(s *discordgo.Session, i *discordgo.Interacti
 						discordgo.TextInput{
 							CustomID:    "descriptions",
 							Label:       "Input event descriptions",
-							Style:       discordgo.TextInputShort,
+							Style:       discordgo.TextInputParagraph,
 							Placeholder: "For example: networking",
 							Required:    false,
 							MaxLength:   300,
@@ -52,10 +52,10 @@ func (c *CommandDomain) HandleEvent(s *discordgo.Session, i *discordgo.Interacti
 						discordgo.TextInput{
 							CustomID:    "location",
 							Label:       "Send google maps link here",
-							Style:       discordgo.TextInputShort,
+							Style:       discordgo.TextInputParagraph,
 							Placeholder: "For example: https://maps.app.goo.gl/T6vhVnvcKwYGoFag6",
 							Required:    true,
-							MaxLength:   30,
+							MaxLength:   300,
 							MinLength:   5,
 						},
 					},
@@ -81,7 +81,7 @@ func (c *CommandDomain) HandleEvent(s *discordgo.Session, i *discordgo.Interacti
 }
 
 // Handle modal submission for registering a cafe
-func (c *CommandDomain) HandleEventModalSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func (c *CommandDomain) HandleCreateEventModalSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	var (
 		name, descriptions, location, event_time_str string
