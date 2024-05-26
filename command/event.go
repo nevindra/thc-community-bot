@@ -90,7 +90,7 @@ func (c *CommandDomain) HandleCreateEventModalSubmit(s *discordgo.Session, i *di
 	// Create object that init channel name mapping the channel id to role id
 	channelNameMap := make(map[string]string)
 	channelNameMap["1238300702191779951"] = "1238300186384662629" // Jabodetabek
-	channelNameMap["1238300702191779951"] = "1238300222002696243" // Surabaya
+	channelNameMap["1238300766113107999"] = "1238300222002696243" // Surabaya
 	channelNameMap["1159497926268162048"] = "1238300240948236318" // Malang
 	channelNameMap["1159497926268162048"] = "1238300252763852841" // Bali
 	channelNameMap["1159497926268162048"] = "1238300275194859601" // Bandung
