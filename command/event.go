@@ -11,7 +11,7 @@ import (
 // Command defines the 'create event' command
 var CreateEvent = &discordgo.ApplicationCommand{
 	Name:        "create-event",
-	Description: "Create event",
+	Description: "This command can be used when you want to create an event and announce it into the #info-wfc channel",
 }
 
 // Handle executes the command logic
@@ -52,10 +52,10 @@ func (c *CommandDomain) HandleCreateEvent(s *discordgo.Session, i *discordgo.Int
 						discordgo.TextInput{
 							CustomID:    "location",
 							Label:       "Send google maps link here",
-							Style:       discordgo.TextInputParagraph,
+							Style:       discordgo.TextInputShort,
 							Placeholder: "For example: https://maps.app.goo.gl/T6vhVnvcKwYGoFag6",
 							Required:    true,
-							MaxLength:   300,
+							MaxLength:   100,
 							MinLength:   5,
 						},
 					},
@@ -94,6 +94,9 @@ func (c *CommandDomain) HandleCreateEventModalSubmit(s *discordgo.Session, i *di
 	channelNameMap["1159497926268162048"] = "1238300240948236318" // Malang
 	channelNameMap["1159497926268162048"] = "1238300252763852841" // Bali
 	channelNameMap["1159497926268162048"] = "1238300275194859601" // Bandung
+	channelNameMap["1242323310935670784"] = "1242323057536667699" // Semarang
+	channelNameMap["1242323370473947187"] = "1242323093246967848" // Yogyakarta
+	channelNameMap["1240875544422125660"] = ""                    // Bot Playground
 
 	// Respond to the interaction first
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
@@ -128,15 +131,19 @@ func (c *CommandDomain) HandleCreateEventModalSubmit(s *discordgo.Session, i *di
 		}
 	}
 
+	// get event time
 	parsedTime, err := parseDateTime(event_time_str)
 	if err != nil {
 		errorMessage := err.Error()
 		s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
 			Content: &errorMessage,
 		})
+		log.Println("Error parsing datetime:", err)
 		return
 	}
-	endTime := parsedTime.Add(time.Hour + 8)
+
+	// get event endTime which is parsedTime + 7 hour
+	endTime := parsedTime.Add(time.Hour * 7)
 
 	// create event based on input data
 	scheduledEvent, err := s.GuildScheduledEventCreate(i.GuildID, &discordgo.GuildScheduledEventParams{
@@ -164,7 +171,7 @@ func (c *CommandDomain) HandleCreateEventModalSubmit(s *discordgo.Session, i *di
 			IconURL: fmt.Sprintf("https://cdn.discordapp.com/avatars/%s/%s.png?size=1024", i.Member.User.ID, i.Member.User.Avatar), // Correct avatar URL
 		},
 		Description: descriptions,
-		Color:       0xD2691E, // Optional: Set embed color (replace with desired color code)
+		Color:       0xD2691E,
 		Thumbnail: &discordgo.MessageEmbedThumbnail{
 			URL: "", // Optional: Set thumbnail image URL (replace with image URL)
 		},
@@ -196,23 +203,26 @@ func (c *CommandDomain) HandleCreateEventModalSubmit(s *discordgo.Session, i *di
 	// Send the embed message to the channel based on the channel ID
 	role_id := channelNameMap[i.ChannelID]
 
-	content := fmt.Sprintf("<@&%s> Hi everyone, please check this new event!", role_id)
+	// if role_id is not empty then send the message to #info-wfc
+	if role_id != "" {
+		content := fmt.Sprintf("<@&%s> Hi everyone, please check this new event!", role_id)
 
-	_, err = s.ChannelMessageSendComplex("1238106246511595540", &discordgo.MessageSend{
-		Content: content,
-		Embeds:  []*discordgo.MessageEmbed{embed},
-	})
-	if err != nil {
-		// Handle error
-		log.Println("Error sending announcement:", err)
-		errorMessage := err.Error()
-		s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
-			Content: &errorMessage,
+		_, err = s.ChannelMessageSendComplex("1238106246511595540", &discordgo.MessageSend{
+			Content: content,
+			Embeds:  []*discordgo.MessageEmbed{embed},
 		})
-		return
-	}
+		if err != nil {
+			// Handle error
+			log.Println("Error sending announcement:", err)
+			errorMessage := err.Error()
+			s.InteractionResponseEdit(i.Interaction, &discordgo.WebhookEdit{
+				Content: &errorMessage,
+			})
+			return
+		}
 
-	log.Println("Announcement sent successfully!")
+		log.Println("Announcement sent successfully!")
+	}
 
 	// Edit Interaction Response
 	cnt := "Event created successfully! Please check the #info-wfc channel for more information."
@@ -240,7 +250,7 @@ func parseDateTime(dateTimeStr string) (time.Time, error) {
 	// Parse the datetime string in the specified location
 	dateTime, err := time.ParseInLocation(layout, dateTimeStr, loc)
 	if err != nil {
-		return time.Time{}, fmt.Errorf("please use the correct format: DD/MM/YYYY HH:MM")
+		return time.Time{}, fmt.Errorf("please use the correct format: DD/MM/YYYY HH.MM")
 	}
 
 	// Check if the date and time are in the past
