@@ -45,7 +45,7 @@ func main() {
 	// Make sure to add this handler each time you add new command
 	commandHandlers := map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 		command.Ping.Name:         commandDomain.HandlePing,
-		command.Event.Name:        commandDomain.HandleEvent,
+		command.CreateEvent.Name:  commandDomain.HandleCreateEvent,
 		command.RegisterCafe.Name: commandDomain.HandleRegisterCafe,
 		command.ListCafe.Name:     commandDomain.HandleListCafe,
 		// Add other commands as necessary
@@ -54,7 +54,7 @@ func main() {
 	// Map to hold modal handlers, Make sure to add this handler each time you add new command
 	modalHandlers := map[string]ModalHandler{
 		"register_cafe_": commandDomain.HandleRegisterCafeModalSubmit,
-		"create_event":   commandDomain.HandleEventModalSubmit,
+		"create_event":   commandDomain.HandleCreateEventModalSubmit,
 		"list_cafe_":     commandDomain.HandleListCafeModalSubmit,
 		// Add other modal handlers as necessary
 	}
@@ -99,7 +99,7 @@ func main() {
 	commands := []*discordgo.ApplicationCommand{
 		command.Ping,
 		command.RegisterCafe,
-		command.Event,
+		command.CreateEvent,
 		command.ListCafe,
 		// Add other commands
 	}
